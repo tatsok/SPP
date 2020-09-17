@@ -1,0 +1,76 @@
+---
+title: "Sales Price Prediction"
+author: "Tatsiana Sokalava"
+date: "7/26/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(ig.width=12, fig.height=8, fig.path='Figs/',
+                      echo=TRUE, warning=FALSE, message=FALSE)
+```
+
+## \underline{Introduction}
+
+This research focuses on analyzing a data set from the Property Appraiser's office located in Orange County, Florida. The Property Appraiser (Assessor) office is a local government agency which determines the value of a property for local real estate taxation purposes. The goal of the office is to fairly and equitable determine the value of each property based on various characteristics and market conditions. In a single property appraisal, there are three approaches recognized by the appraisal community to determine the value: sales comparison, cost approach, and income approach. Depending on the type of the property, more then one approach is considered and the most applicable approach is often used. When thousands of properties need to be valued in a short period of time, Property Appraisers office uses mass appraisal techniques that are based on data modeling. 
+
+The data set used in this work lists single-family residential properties sold since 2015. Each property is identified by a unique parcel ID, situs address, various location characteristics and property features. The goal of this project is to build a model that predicts values of the properties using these characteristics and features. The performance of the model is measured by the value of the root mean square error (RMSE). The key steps involved in the analysis are exploring and wrangling the data, understanding key components and variable importance of the data, preprocessing of the data, testing the models and tuning parameters, and building the final ensemble model that yields the lowest RMSE.
+
+We start by loading the necessary packages.  
+
+* `tidyverse`
+* `caret`
+* `data.table`
+* `gam`
+* `lubridate`
+* `scale`
+* `gridExtra`
+
+```{r pkg-load, include=FALSE, message=FALSE, warning=FALSE}
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
+if(!require(lubridate)) install.packages("lubridate", repos = "http://cran.us.r-project.org")
+if(!require(gam)) install.packages("gam", repos = "http://cran.us.r-project.org")
+if(!require(scales)) install.packages("scales", repos = "http://cran.us.r-project.org")
+if(!require(gridExtra)) install.packages("gridExtra", repos = "http://cran.us.r-project.org")
+if(!require(devtools)) install.packages("devtools")
+devtools::install_github("kassambara/ggpubr") install.packages("ggpubr")
+
+#dslabs, dplyr, leaflet
+```
+
+```{r pkg-optn, include=FALSE}
+options(digits = 5)
+options(pillar.sigfig = 6)
+```
+
+Another common type of machine-learning problem is regression, which consists of predicting a continuous value instead of a discrete label: for instance, 
+And each feature in the input data (for example, the crime rate) has a different scale.
+The Boston Housing Price dataset
+As you can see, you have 404 training samples and 102 test samples, each with 13 numerical features, such as per capita crime rate, average number of rooms per dwelling, accessibility to highways, and so on.
+A widespread best practice to deal with such data is to do feature-wise normalization: for each feature in the input data (a column in the input data matrix), you subtract the mean of the feature and divide by the standard deviation, so that the feature is centered around 0 and has a unit standard deviation. This is easily done in R using the scale() function.
+The network ends with a single unit and no activation (it will be a linear layer). This is a typical setup for scalar regression (a regression where you’re trying to predict a single continuous value).
+
+Note that you compile the network with the mse loss function—mean squared error, the square of the difference between the predictions and the targets. This is a widely used loss function for regression problems.
+
+You’re also monitoring a new metric during training: mean absolute error (MAE). It’s the absolute value of the difference between the predictions and the targets. For instance, an MAE of 0.5 on this problem would mean your predictions are off by $500 on average.
+
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
