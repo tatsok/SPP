@@ -505,7 +505,7 @@ average_mse_history<-data.frame(epoch=seq(1:ncol(all_scores)),validation_mse=app
 # Lets plot it:
 ggplot(average_mse_history, aes(x=epoch, y=validation_mse))+geom_line()+geom_smooth()
 
-# According to the plot, MSE stops improving after 75 epochs. Past that, we start overfilling.
+# According to the plot, MSE stops improving after 70 epochs. Past that, we start overfilling.
 # We can also tune other parameters, such as size of the hidden layers. 
 
 #################################################################################################
@@ -513,7 +513,7 @@ ggplot(average_mse_history, aes(x=epoch, y=validation_mse))+geom_line()+geom_smo
 # Please note that when test-trained on GPU, the model yields a better result.The result discussed below was produced on CPU.
 
 model<-build_model()
-model%>%fit(train_x,train_y,epochs=75, batch_size=20, verbose=0)
+model%>%fit(train_x,train_y,epochs=70, batch_size=20, verbose=0)
 
 seed = 42
 reticulate::py_set_seed(seed)

@@ -701,7 +701,7 @@ ggplot(average_mse_history, aes(x=epoch, y=validation_mse))+geom_line()+geom_smo
 
 According to the plot, MSE stops improving after 70 epochs. Past that, we start overfilling. While not included in this work, the size and number of hidden layers can also be tuned to improve the model's performance.
 
-Now let's train the final deep learning model with the best parameters (in this case, the number of epochs is 70). *Please note that when testing on GPU, the model yields a better result. The result discussed in this study was produced on CPU as proof of concept only. GPU use is highly recommended.*
+Now let's train the final deep learning model with the best parameters (in this case, the number of epochs is 70). *Please note that when testing on GPU, the model yields a better result. The result discussed in this study was produced on CPU as proof of concept only. GPU use is highly recommended.* The model fit using Tesla V100 GPU on a ubuntu-18.04-LTS server.
 
 ```{r mod, include=TRUE, message=TRUE, warning=FALSE}
 model<-build_model()
