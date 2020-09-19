@@ -42,6 +42,7 @@ if(!require(Rborist)) install.packages("Rborist",repos = "http://cran.us.r-proje
 if(!require(reticulate)) install.packages("reticulate",repos = "http://cran.us.r-project.org")
 if(!require(keras)) install.packages("keras",repos = "http://cran.us.r-project.org")
 if(!require(webshot)) install.packages("webshot",repos = "http://cran.us.r-project.org")
+if(!require(ggpubr)) devtools::install_github("kassambara/ggpubr")
 ```
 ```{r ker-lib, include=TRUE, message=FALSE, warning=FALSE, results = 'hide'}
 library(keras)
@@ -635,7 +636,7 @@ So far, this is the best model that yields MSE of 0.0192049. Let's see if we can
 
 Deep learning in nature is a subset of machine learning that puts an emphasis on models called neural networks, structured in literal layers stacked on top of each other.
 
-Using the powerful *Keras* package, we create a network with five dense layers with the following units: 128, 512, 256, 128, 1 (output layer). And a dropout rate of 0.1 that helps to reduce overfitting. The network ends with a single unit to predict a single continuous value of Sales Prices.
+Using the powerful *Keras* package, we create a network with five dense layers with the following units: 256, 1024, 512, 256, 1 (output layer). And a dropout rate of 0.1 that helps to reduce overfitting. The network ends with a single unit to predict a single continuous value of Sales Prices.
 
 ```{r s1, include=FALSE, message=FALSE, warning=FALSE}
 # To ensure this code is reproducible, the following set seed is used:
@@ -651,12 +652,11 @@ The process begins with building a function for a model. We compile a model and 
 ```{r kerfun, include=TRUE, message=TRUE, warning=FALSE}
 build_model<-function(){
   model <- keras_model_sequential() %>%
-    layer_dense(units = 128, activation = "relu",
-                input_shape = dim(train_x)[[2]]) %>%
-    layer_dropout(rate=0.1)%>%layer_dense(units=512, activation = "relu")%>%
-    layer_dropout(rate=0.1)%>%layer_dense(units=256, activation="relu")%>%
-    layer_dropout(rate=0.1)%>%layer_dense(units = 128, activation = "relu")%>%
+    layer_dense(units = 256, activation = "relu",input_shape = dim(train_x)[[2]]) %>%
+    layer_dropout(rate=0.1)%>%layer_dense(units=1024, activation = "relu")%>%
     layer_dropout(rate=0.1)%>%
+    layer_dense(units=512, activation="relu")%>%layer_dropout(rate=0.1)%>%
+    layer_dense(units = 256, activation = "relu")%>%layer_dropout(rate=0.1)%>%
     layer_dense(units = 1)
   
   model %>% compile(optimizer = "adam",loss = "mse",metrics = c("mae"))

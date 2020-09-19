@@ -21,10 +21,11 @@ if(!require(Rborist)) install.packages("Rborist",repos = "http://cran.us.r-proje
 if(!require(reticulate)) install.packages("reticulate",repos = "http://cran.us.r-project.org")
 if(!require(keras)) install.packages("keras",repos = "http://cran.us.r-project.org")
 if(!require(webshot)) install.packages("webshot")
+if(!require(ggpubr)) devtools::install_github("kassambara/ggpubr")
 
 library(keras)
 install_keras() # or install_keras(tensorflow = "gpu") - used for the TensorFlow backend engine 
-devtools::install_github("kassambara/ggpubr")
+
 library(ggpubr)
 library(tidyverse)
 library(lubridate)
@@ -449,7 +450,7 @@ knitr::kable(results8, "simple")
 # So far, this is the best model. Let's see if we can take it a step further and improve the MSE parameter by adding another model:
 
 # Model: Deep-learning 
-# Because the data set is not large, I will use a network with five dense layers with the following units: 128, 512, 256, 128, 1 (output layer). 
+# Because the data set is not large, I will use a network with five dense layers with the following units: 256, 1024, 512, 256, 1 (output layer). 
 # And a dropout rate of 0.1 that helps to reduce overfitting.
 # The network will end with a single unit to predict a single continuous value.
 
@@ -463,10 +464,11 @@ tensorflow::tf$random$set_seed(42)
 # It begins with building a function for a model using keras package.
 build_model<-function(){
   model <- keras_model_sequential() %>%
-    layer_dense(units = 128, activation = "relu",input_shape = dim(train_x)[[2]]) %>%
-    layer_dropout(rate=0.1)%>%layer_dense(units=512, activation = "relu")%>%
-    layer_dropout(rate=0.1)%>%layer_dense(units=256, activation="relu")%>%
-    layer_dropout(rate=0.1)%>%layer_dense(units = 128, activation = "relu")%>%layer_dropout(rate=0.1)%>%
+    layer_dense(units = 256, activation = "relu",input_shape = dim(train_x)[[2]]) %>%
+    layer_dropout(rate=0.1)%>%layer_dense(units=1024, activation = "relu")%>%
+    layer_dropout(rate=0.1)%>%
+    layer_dense(units=512, activation="relu")%>%layer_dropout(rate=0.1)%>%
+    layer_dense(units = 256, activation = "relu")%>%layer_dropout(rate=0.1)%>%
     layer_dense(units = 1)
   
   model %>% compile(optimizer = "adam",loss = "mse",metrics = c("mae"))
