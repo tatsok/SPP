@@ -1,40 +1,31 @@
-my_packages <- c("tidyverse","caret","data.table","lubridate","dslabs","dplyr", "data.table","matrixStats","raster","gam","scales","RColorBrewer","gridExtra","knitr","devtools","ggpubr", "gam","gbm", "xgboost","Rborist")                
-not_installed <- my_packages[!(my_packages %in% installed.packages()[ , "Package"])]    # Extract not installed packages
-if(length(not_installed)) install.packages(not_installed)                               # Install not installed packages
-
 
 if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
 if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(corrplot)) install.packages("corrplot", repos = "http://cran.us.r-project.org")
 if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
 if(!require(lubridate)) install.packages("lubridate", repos = "http://cran.us.r-project.org")
 if(!require(dslabs)) install.packages("dslabs",repos = "http://cran.us.r-project.org")
 if(!require(dplyr)) install.packages("dplyr",repos = "http://cran.us.r-project.org")
-if(!require(data.table)) install.packages("data.table",repos = "http://cran.us.r-project.org")
 if(!require(matrixStats)) install.packages("matrixStats",repos = "http://cran.us.r-project.org")
-#if(!require(keras)) install_keras() #install_keras(tensorflow = "gpu")
-if(!require(raster)) install.packages("raster")
-if(!require(gam)) install.packages("gam", repos = "http://cran.us.r-project.org")
+if(!require(raster)) install.packages("raster", repos = "http://cran.us.r-project.org")
 if(!require(scales)) install.packages("scales", repos = "http://cran.us.r-project.org")
 if(!require(RColorBrewer)) install.packages("RColorBrewer", repos = "http://cran.us.r-project.org")
-if(!require(gridExtra)) install.packages("gridExtra", repos = "http://cran.us.r-project.org")
-if(!require(knitr)) install.packages("knitr")
-if(!require(devtools)) install.packages("devtools")
-
+if(!require(leaflet)) install.packages("leaflet", repos = "http://cran.us.r-project.org")
+if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
+if(!require(devtools)) install.packages("devtools", repos = "http://cran.us.r-project.org")
 if(!require(ggpubr)) install.packages("ggpubr",repos = "http://cran.us.r-project.org")
 if(!require(gam)) install.packages("gam",repos = "http://cran.us.r-project.org")
 if(!require(gbm)) install.packages("gbm",repos = "http://cran.us.r-project.org")
 if(!require(xgboost)) install.packages("xgboost",repos = "http://cran.us.r-project.org")
 if(!require(Rborist)) install.packages("Rborist",repos = "http://cran.us.r-project.org")
+if(!require(reticulate)) install.packages("reticulate",repos = "http://cran.us.r-project.org")
+if(!require(keras)) install.packages("keras",repos = "http://cran.us.r-project.org")
+if(!require(webshot)) install.packages("webshot")
 
-
-
+library(keras)
+install_keras() # or install_keras(tensorflow = "gpu") - used for the TensorFlow backend engine 
 devtools::install_github("kassambara/ggpubr")
 library(ggpubr)
-library(keras)
-if (FALSE) {
-  library(keras)
-  install_keras() #install_keras(tensorflow = "gpu")
-}
 library(tidyverse)
 library(lubridate)
 library(dslabs)
@@ -45,7 +36,6 @@ library(matrixStats)
 library(raster)
 library(corrplot)
 library(scales)
-library(raster)
 library(gam)
 library(gbm)
 library(xgboost)
@@ -53,40 +43,15 @@ library(Rborist)
 library(reticulate)
 library(caret)
 library(RColorBrewer) 
+library(knitr)
 
 
 
 
-# Load data & clean
-github_link<-"https://drive.google.com/file/d/1mK8DTlvQZ4XxWwPKrSk2C-RpbM-BQHFY/view?usp=sharing"
+# Load sqtest data provided in the GitHub repository files
 
-library(httr)
-temp_file <- tempfile(fileext = ".xlsx")
-req <- GET(github_link, 
-           # authenticate using GITHUB_PAT
-           authenticate(Sys.getenv("GITHUB_PAT"), ""),
-           # write result to disk
-           write_disk(path = temp_file))
-tab <- readxl::read_excel(temp_file)
-tab
-#> # A tibble: 5 x 1
-#>   text 
-#>   <chr>
-#> 1 what 
-#> 2 fresh
-#> 3 hell 
-#> 4 is   
-#> 5 this
-unlink(temp_file)
-dl <- tempfile(fileext = ".xlsx")
-dl
-
-download.file(, destfile=dl, mode="wb")
-
-readxl::read_xlsx("sqtest.xlsx")
-
-sqtest<-readxl::read_xlsx("~/Documents/Capstone/SPR/sqtest.xlsx")
-
+sqtest<-readxl::read_xlsx("sqtest.xlsx") # sqtest<-readxl::read_xlsx("~/Downloads/sqtest.xlsx")
+str(sqtest)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ DATA WRANGLING ++++++++++++++++++++++++++++++++++++++++#  
 
@@ -97,39 +62,50 @@ sqtest<-sqtest%>%arrange(BLDG_NUM)%>%distinct(Sale_Date, Parcel,XFOB, .keep_all 
 sqtest<-sqtest%>%mutate(XFOB_NAME=as.factor((str_extract(XFOB,"[:letter:]+[:space:]?[:letter:]+"))),XFOB_Q=as.numeric(str_extract(XFOB, "[[:digit:]]+")))%>%mutate(XFOB_Q=ifelse(is.na(XFOB_Q),1,XFOB_Q))
 sqtest<-sqtest%>%group_by(Sale_Date, Parcel,Township, Range,Situs_Address, City,Land_Sq,Sales_Price,City_Code,HEATED_AREA,AREA, DOR_CODE,MARKET, NBHD_DESC, LONGITUDE,LATITUDE,PPSF,BLDG_NUM,SR,BEDS, BATHS,EYB,AYB,STORIES,EXT_W,ZIP_Code, XFOB_NAME)%>%summarize(XFOB_Q=sum(XFOB_Q))
 sqtest<-sqtest%>%spread(key=XFOB_NAME, XFOB_Q,0)%>%ungroup()
-sqtest<-rename(sqtest, c( "ACC_BLDG"="ACC BLDG","BOAT_COVER"="BOAT COVER","BOAT_DOCK"="BOAT DOCK","BOAT_HOUSE"="BOAT HOUSE","COVER_ALUM"="COVER ALUM","COVER_STL"="COVER STL", "HORSE_STAB"="HORSE STAB","MOBILE_HM"="MOBILE HM","SUMMER_KITCHEN"="SUMMER KITCHEN","PATIO_NO"="PATIO NO","PATIO_WD"="PATIO WD","PAV_CON"="PAV CON","POLE_BLDG"="POLE BLDG","RESIDENTIAL_EL"="RESIDENTIAL ELEVATOR","RM_ENCL"="RM ENCL" ,"SCRN_ENC"="SCRN ENC", "SHED_N"="SHED N", "SUMMER_KITCHEN"="SUMMER KITCHEN", "WALL_CB"="WALL CB", "WALL_DEC"="WALL DEC", "WALL_NO"="WALL NO"))
+sqtest<-rename(sqtest, c("ACC_BLD"="ACC BLD","ACC_BLDG"="ACC BLDG","BOAT_COVER"=
+                           "BOAT COVER","BOAT_DOCK"=
+                           "BOAT DOCK","BOAT_HOUSE"="BOAT HOUSE","COVER_FG"="COVER FG", 
+                         "COVER_WD"="COVER WD" , "SMALL_SHED"="SMALL SHED", 
+                         "COVER_ALUM"="COVER ALUM","COVER_STL"="COVER STL", 
+                         "HORSE_STAB"="HORSE STAB","MOBILE_HM"="MOBILE HM",
+                         "SUMMER_KITCHEN"="SUMMER KITCHEN", "PARKING_SPACE"=
+                           "PARKING SPACE", "PO_BLDG"="PO BLDG", "PATIO_NO"="PATIO NO",
+                         "PATIO_WD"="PATIO WD","PAV_CON"="PAV CON","POLE_BLDG"=
+                           "POLE BLDG","RESIDENTIAL_EL"="RESIDENTIAL ELEVATOR",
+                         "RM_ENCL"="RM ENCL","SCRN_ENC"="SCRN ENC", "SHED_N"="SHED N", 
+                         "SUMMER_KITCHEN"="SUMMER KITCHEN", "WALL_CB"="WALL CB", 
+                         "WALL_DEC"="WALL DEC", "WALL_NO"="WALL NO" ))
 head(sqtest)
-
-
-
-#++++++++++++++++++++++++++++++++++++++++++++++++++ VISUALIZATION AND DATA CLEANING ++++++++++++++++++++++++++++++++++++++#
 
 # Let's view the structure of our data set after wrangling:
 
 str(sqtest)
 summary(sqtest)
-colnames(sqtest)
 
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++ VISUALIZATION AND RATIO STANDARDS ++++++++++++++++++++++++++++++++++++++#
 
 # Let's visualize our data set using Orange County map
 county <-subset(raster::getData("GADM", country="usa", level=2), NAME_1=="Florida"&NAME_2=="Orange")
 mybins<-c(0,100000,200000,300000,400000,500000,600000,700000,800000,900000,1000000,Inf)
 pal<-colorBin(palette="Spectral",domain=sqtest$Sales_Price, bins=mybins,reverse=T)
 
-labels <- sprintf("Date of Sale:<strong> %s</strong><br/>Sale Price: $%g<br/>Heated Area: %g<br>Beds: %g <br>Baths: %g", sqtest$Sale_Date, sqtest$Sales_Price, sqtest$HEATED_AREA, sqtest$BEDS, sqtest$BATHS) %>% lapply(htmltools::HTML)
-
 map<-sqtest%>%leaflet()%>%addProviderTiles(providers$Esri.WorldGrayCanvas)%>%
-  addCircles(radius=50, color=pal(sqtest$Sales_Price), weight = 3, stroke = FALSE, fillOpacity = 0.8)%>%addCircleMarkers(color=pal(sqtest$Sales_Price),clusterOptions = markerClusterOptions(),label=~labels, labelOptions = labelOptions( opacity=0.9, color="grey",textsize = "10px", direction="right"))%>%
+  addCircles(radius=50, color=pal(sqtest$Sales_Price), weight = 3, stroke = FALSE, fillOpacity = 0.8)%>%addCircleMarkers(color=pal(sqtest$Sales_Price),clusterOptions = markerClusterOptions(), labelOptions = labelOptions( opacity=0.9, color="grey",textsize = "10px", direction="right"))%>%
   addPolygons(data = county,fillOpacity = 0.1, color = "grey", stroke = TRUE, weight = 5,layerId = county@data$NAME_2)%>%leaflet::addLegend("topright", pal=pal, values=sqtest$Sales_Price, title = "Sales by Sales Price")
 map
 
 
-# Let's review the distribution of the Sales Prices. For convenience, we filter the Sales Prices under 2mil:
+# Let's review the distribution of the Sales Prices. For convenience, we filter the Sales Prices under $2 million:
 sqtest%>%filter(Sales_Price<2000000)%>%ggplot(aes(Sales_Price, fill=City))+geom_histogram(binwidth=7000)+scale_x_continuous(labels=dollar, breaks = scales::pretty_breaks(n = 10))+
   theme(axis.text.x = element_text(angle=45, hjust=1, size=15), plot.title = element_text(size=20),plot.subtitle = element_text(size=18), legend.title = element_text(size=18), legend.text = element_text(size=14),axis.title = element_text(size=18), axis.text.y = element_text(size=15))+
   labs(title = 'Single-Family Real Estate Sales Distribution', subtitle= 'Year: 2019', x = 'Sale Price', y = 'Count')
-# It looks like vast majority of the sales are under the price of $600,000 with some sales below $1.4 and a very few above that
-# Let's see the boxplot and histogram distributions of Sales Prices and logged Sales Prices 
+# We see that majority of sales records are from Orlando area. The distribution is right skewed with average somewhere between $200,000 to $400,000.
+
+# Let's calculate the mean and the median Sales Price in 2019 for single-family homes.
+sqtest%>%summarize(MEAN=mean(Sales_Price), MEDIAN=median(Sales_Price))%>%data.frame()
+
+# Let's see the boxplot and histogram distributions of Sales Prices and logged Sales Prices. 
 
 a<-ggplot(sqtest)+geom_boxplot(aes(Sales_Price), fill="red")
 b<-ggplot(sqtest)+geom_boxplot(aes(log(Sales_Price)), fill="blue")
@@ -137,9 +113,7 @@ c<-ggplot(sqtest)+geom_histogram(aes(Sales_Price), fill="red")
 d<-ggplot(sqtest)+geom_histogram(aes(log(Sales_Price)), fill="blue")
 ggpubr::ggarrange(a,b,c,d,ncol = 2, nrow = 2)
 
-# The sales price data is positively skewed. The logarithmic transformation will be warranted as it makes distribution to resemble a normal curve and it tends to show less severe increases or decreases than linear scales.
-## Additionally, let's convert the Sales Date into year and month
-##sqtest<-sqtest%>%mutate(Sale_Date=year(Sale_Date))
+# The sales price data is right skewed. The logarithmic transformation will be warranted as it makes distribution to resemble a normal curve and it tends to show less severe increases or decreases than linear scales.
 
 # Let's now review SR feature in the data set that stands for sales ratio. This ratio is calculated for each observation by dividing the appraised (or assessed) value by the sale price.
 # It measures the quality of the assessments and can be used to measure the annual performance of the assessment roll produced by the assessors' offices.
@@ -148,12 +122,12 @@ e<-ggplot(sqtest)+geom_point(aes(Sales_Price, SR))
 f<-ggplot(sqtest)+geom_boxplot(aes(Sales_Price))
 ggpubr::ggarrange(e,f,ncol = 1, nrow = 2)
 
-# There are two apparent observations from the plots: (1) the data set is affected by the sales ratio outliers (which often signal a bias in the assessment or sales price); (2) the majority of properties are below 2 million dollar range.
+# There are two notable observations from the plots: (1) the data set is affected by the sales ratio outliers (which often signal a bias in the assessment or sales price); (2) the majority of properties are below 2 million dollar range.
 # Therefore, to improve our model performance, it is reasonable to remove the sales ratio (SR) outliers from the data set and properties over 2 million dollars, which represent less than 1% of the data set. 
 
 sqtest<-sqtest%>%filter(Sales_Price<2000000, !SR%in%boxplot(SR, plot=FALSE)$out)%>%mutate(Sale_Date=year(Sale_Date))
 
-# The plots after this transformation show an apparent improvement
+# The plots after this transformation show an apparent improvement:
 e<-ggplot(sqtest)+geom_point(aes(Sales_Price, SR))
 f<-ggplot(sqtest)+geom_boxplot(aes(Sales_Price))
 ggpubr::ggarrange(e,f,ncol = 1, nrow = 2)
@@ -166,7 +140,7 @@ ggpubr::ggarrange(e,f,ncol = 1, nrow = 2)
 # It relates to “horizontal,” or random, dispersion among the ratios in a stratum, regardless of the value of individual parcels. 
 # It is calculated by subtracting the median from each ratio, taking the absolute value of the calculated differences, summing the absolute differences, dividing by the number of ratios to obtain the average absolute deviation, dividing by the median and multiplied by 100.
 # The acceptable level for single-family type of properties is 5.0-15.0.
-# Another form of inequity can be systematic differences in the appraisal of low- and high-value properties,termed “vertical” inequities.
+# Another form of inequity relates to differences in the appraisal of low- and high-value properties,termed “vertical” inequities.
 # An index for measuring vertical equity is the PRD, which is calculated by dividing the mean ratio by the weighted mean ratio. This statistic should be close to 1.00
 # The acceptable level is 0.98-1.03.
 # So, let's see how these metrics hold on our data set:
@@ -186,14 +160,14 @@ COD
 PRD<-sqtest%>%summarize(PRD=as.numeric(stat$MEAN)/(sum(sqtest$SR*sqtest$Sales_Price)/sum(sqtest$Sales_Price)))
 PRD
 
-# With that, we will use the following ratios as benchmarks for our constructed model to it passes the assessment industry standards:
+# With that, we will use the following ratios to benchmark if the model passes the assessment industry standards:
 
 original<-knitr::kable(cbind(MEAN=stat[1], MEDIAN=stat[2], CONF_LOW=ci[1], CONF_HIGH=ci[2], COD=COD, PRD=PRD), "simple", caption = "Original CAMA Ratios")
 original
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++ FEATURE ENGINEERING ++++++++++++++++++++++++++++++++++++++++++++++++#
 
-# Let's transform EYB and AYB into effective and actual ages and remove Heated Area from Total Area. 
+# Let's transform EYB and AYB into effective and actual ages and remove Heated Area from the Total Area. 
 sqtest<-sqtest%>%mutate(EYB=Sale_Date-EYB, AYB=Sale_Date-AYB, AREA=AREA-HEATED_AREA)
 
 # Let's review the relationship between features and the outcome
@@ -224,8 +198,8 @@ ggpubr::ggarrange(area, area_log2, harea, harea_log2, land, land_log2, ayb,ayb_l
 # We do the transformations after removing zeros and NAs
 sqtest<-sqtest%>%mutate(AREA=ifelse(AREA==0, 1, AREA))%>%mutate(STORIES=ifelse(is.na(STORIES),1,STORIES), BEDS=ifelse(is.na(BEDS),1,BEDS), BATHS=ifelse(is.na(BATHS),1,BATHS))%>%mutate(Sales_Price=log(Sales_Price), AREA=log(AREA), HEATED_AREA=log(HEATED_AREA), Land_Sq=log(Land_Sq))
 
-# There are several features listed in the columns 27 through 63. Having too many features will increase the computation time without adding much value.
-# Let's review the correlation with the sales price and variability of those features and remove those with little correlation (less than |x|<0.25) and no variability.
+# There are several features listed in the columns 27 through 68. Having too many features will increase the computation time without adding much value.
+# Let's review the Sales Price correlation and variability of these features and remove those with little correlation (less than |x|<0.25) and no variability.
 correlation<-cor(sqtest[,8],sqtest[,27:ncol(sqtest)])
 correlation
 nocor<-which(correlation>-0.25&correlation<0.25|is.na(correlation))
@@ -246,9 +220,8 @@ X2
 feature_remove<-intersect(X1,X2)
 feature_remove
 sqtest<-sqtest[,-which(colnames(sqtest)%in%feature_remove)]
-head(sqtest)
 
-# Lets review how some of the remaining features correlated:
+# Let's review how some of the remaining features correlated:
 m<-cor(sqtest[,c(3,4,7,8,10:13,15,16,20:24,27:ncol(sqtest))])
 corrplot::corrplot(m, method="circle", order="hclust")
 
@@ -264,7 +237,7 @@ sqtest<-sqtest[,c(7:13,15,16,20:25, 27:ncol(sqtest))]
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++ ML ALGORITHMS +++++++++++++++++++++++++++++++++++++++++++++++++++#
 
-# First, let's separate our labels into a vector y of sales prices and create a matrix x containing the features (excluding the sales date):
+# First, let's separate our labels into a vector y of Sales Prices and create a matrix x containing the features (excluding the sales date):
 y<-data.matrix(sqtest[,2])
 x<-data.matrix(sqtest[,-2])
 
@@ -292,7 +265,9 @@ test_x<-scale(test_x, center=mean, scale=std)
 
 # There are a variety of loss functions available to measure the performance of ML algorithms. We will define the loss functions that are most applicable to our problem.
 # We will use MSE (mean square error) as our loss function and use MAE as a relative metric of loss for easier interpretation of the results.
-# One important distinction between MAE & RMSE is that minimizing the squared error over a set of numbers results in finding its mean, and minimizing the absolute error results in finding its median. This is the reason why MAE is robust to outliers whereas RMSE is not.
+# One important distinction between MAE & MSE is that minimizing the squared error over a set of numbers results in finding its mean, and minimizing the absolute error results in finding its median. 
+# This is the reason why MAE is robust to outliers whereas MSE is not.
+
 MSE <- function(true_price, predicted_price){ 
   mean((true_price -  predicted_price)^2)
 }
@@ -313,7 +288,7 @@ MAEE<-function(true_price, predicted_price){
 
 # Now, we are going to fit several different models and build the ensemble model:
 
-# Model: GLM - generalized linear model
+# Model 1: GLM - generalized linear model
 # In our model we will define trControl function that controls the resampling scheme to 10 fold cross-validation:
 
 Control<-trainControl(method="cv", number=10)
@@ -324,7 +299,7 @@ glm_predict<-predict(train_glm, test_x)
 results1<-data_frame(MODEL="GLM", MSE=MSE(test_y, glm_predict))
 knitr::kable(results1, "simple")
 
-# Model: LOESS - (takes under 2 minutes) 
+# Model 2: LOESS - (takes under 2 minutes) 
 # In Loess model, we can tune the paarmeters using tuneGrid function. After further testing, tuning was omitted to decrease time of training.
 #tuneGrid = expand.grid(span = seq(0.20, 0.50, len = 10), degree=2) 
 
@@ -336,14 +311,14 @@ loess_predict<-predict(train_loess, test_x)
 results2<-bind_rows(results1, data_frame(MODEL="LOESS", MSE=MSE(test_y, loess_predict)) )
 knitr::kable(results2, "simple")
 
-# MSE results improved from 0.0495869 to 0.0347857
+# MSE results have improved from 0.0495869 to 0.0347857
 
-# Model: svmLinear - (takes under 2 minutes)
+# Model 3: svmLinear - (takes under 2 minutes)
 
 # An SVM classifies data by determining the optimal hyperplane that separates observations according to their class labels. 
 # While commonly used for classification problems, it can also be applied to regression tasks. We will try it here.
 Control<-trainControl(method="cv", number=5)
-# grid <- expand.grid(span = seq(0.15, 0.65, len = 10), degree = 1) - optional tuning (substantialy increases training time)
+# grid <- expand.grid(span = seq(0.15, 0.65, len = 10), degree = 1) - optional tuning (substantially increases training time)
 set.seed(1)
 train_svm<-train(train_x,train_y, method="svmLinear", trControl=Control, tuneLength = 8)
 
@@ -356,11 +331,11 @@ svm_predict<-predict(train_svm, test_x)
 results3<-bind_rows(results2, data_frame(MODEL="SVM", MSE=MSE(test_y, svm_predict)) )
 knitr::kable(results3, "simple")
 
-# The SVM model did not do as great, lets try K Nearest Neighbors (KNN) model
+# The SVM model did not do as great, lets try K Nearest Neighbors (KNN) model.
 
-# Model: KNN - (takes under 1 minutes)
+# Model 4: KNN - (takes under 1 minute)
 
-tuningknn<-data.frame(k=seq(3,15,2))
+tuningknn<-data.frame(k=seq(3,13,2))
 Control<-trainControl(method="cv", number=5)
 set.seed(1)
 train_knn<-train(train_x, train_y, method="knn",tuneGrid=tuningknn, trControl=Control,tuneLength = 10)
@@ -378,7 +353,7 @@ train_knn$bestTune
 results4<-bind_rows(results3, data_frame(MODEL="KNN", MSE=MSE(test_y, knn_predict)) )
 knitr::kable(results4, "simple")
 
-# Model: Random Forest with Rborist - (less then 2 minutes)
+# Model 5: Random Forest with Rborist - (less then 2 minutes)
 
 # Let's first run a model on 50 trees to define the best tunning parameters (you can skip this code and go to the model with the best parameters a few lines below):
 control<-trainControl(method="cv", number = 5, p=0.8)
@@ -402,9 +377,9 @@ rf_predict<-predict(train_rf, test_x)%>%.$yPred
 results5<-bind_rows(results4, data_frame(MODEL="RF", MSE=MSE(test_y, rf_predict)) )
 knitr::kable(results5, "simple")
 
-# The Random Forrest model yields the lowest MSE so far 
+# The Random Forrest model yields the lowest MSE so far. 
 
-# Model: GBM - gradient boosting - (it takes under 5 minutes) 
+# Model 6: GBM - gradient boosting - (it takes under 5 minutes) 
 
 # Gradient boosting is considered a gradient descent algorithm.
 # Whereas random forests build an ensemble of deep independent trees, GBMs build an ensemble of shallow and weak successive trees with each tree learning and improving on the previous. 
@@ -436,7 +411,8 @@ knitr::kable(results6, "simple")
 
 
 # Let's compile it in the ensemble with equal weight for each model:
- 
+
+# Ensemble 1:  
 
 ensemble_predict1<-apply(cbind(glm_predict, loess_predict, svm_predict, knn_predict, rf_predict, gbm_predict),1,mean)
 results7<-bind_rows(results6, data_frame(MODEL="ENS1", MSE=MSE(test_y, ensemble_predict1)) )
@@ -445,6 +421,8 @@ knitr::kable(results7, "simple")
 # The MSE increased substantially from the GBM's lowest result.
 
 # Let's create a second ensemble that uses two best performing models: Random Forest and GBM with equal weights:
+
+# Ensemble 2:
 
 ensemble_predict2<-apply(cbind(rf_predict, gbm_predict),1,mean)
 MSE(test_y,ensemble_predict2)
@@ -471,10 +449,9 @@ knitr::kable(results8, "simple")
 # So far, this is the best model. Let's see if we can take it a step further and improve the MSE parameter by adding another model:
 
 # Model: Deep-learning 
-# Because the data set is not large, I will use a smaller network with two hidden layers each 128 units to mitigate overfilling.
+# Because the data set is not large, I will use a network with five dense layers with the following units: 128, 512, 256, 128, 1 (output layer). 
+# And a dropout rate of 0.1 that helps to reduce overfitting.
 # The network will end with a single unit to predict a single continuous value.
-
-# It begins with building a function for a model using keras package.
 
 # To ensure this code is reproducible, the following set seed is used:
 seed = 42
@@ -483,10 +460,14 @@ reticulate::py_set_seed(seed)
 set.seed(seed)
 tensorflow::tf$random$set_seed(42)
 
+# It begins with building a function for a model using keras package.
 build_model<-function(){
   model <- keras_model_sequential() %>%
     layer_dense(units = 128, activation = "relu",input_shape = dim(train_x)[[2]]) %>%
-    layer_dense(units = 128, activation = "relu")%>%layer_dense(units = 1)
+    layer_dropout(rate=0.1)%>%layer_dense(units=512, activation = "relu")%>%
+    layer_dropout(rate=0.1)%>%layer_dense(units=256, activation="relu")%>%
+    layer_dropout(rate=0.1)%>%layer_dense(units = 128, activation = "relu")%>%layer_dropout(rate=0.1)%>%
+    layer_dense(units = 1)
   
   model %>% compile(optimizer = "adam",loss = "mse",metrics = c("mae"))
 }
@@ -514,7 +495,7 @@ for (i in 1:k){
   #build the model already compiled above
   model<-build_model()
   #train the model in silent mode (verbose=0)
-  history<-model%>%fit(partial_train_x,partial_train_y,validation_data=list(val_data, val_targets),epochs=num_epochs, batch_size=1, verbose=0)
+  history<-model%>%fit(partial_train_x,partial_train_y,validation_data=list(val_data, val_targets),epochs=num_epochs, batch_size=20, verbose=0)
   mse_history<-history$metrics$val_loss
   all_scores<-rbind(all_scores,mse_history)
   
@@ -541,18 +522,19 @@ tensorflow::tf$random$set_seed(42)
 
 model%>%evaluate(test_x, test_y)
 
-# Obtaining reproducible model is difficult with Keras. In order to maintain the consistent result, we saved the model produced here and it will be available to download: 
-#save_model_hdf5(model, '~/Documents/Capstone/SPR/my_dl_model')
-model <- load_model_hdf5('~/Documents/Capstone/SPR/my_dl_model')
+# Obtaining reproducible model is difficult with Keras. In order to maintain the consistent result, I saved the model produced here and it will be available to download via GitHub: 
+#save_model_hdf5(model, 'my_dl_model')
+model <- load_model_hdf5('my_dl_model') #from the repository files
 
 dl_predict<-model%>%predict(test_x)
 
 # Let's see what MSE is generated by the deep learning model
 MSE(test_y,dl_predict)
 
-# This result is below several models, but not ranked first
+# This result is relatively good, but it's not ranked first. 
 
 # Let's compile a 3rd ensemble with the deep learning model giving the same weight to each model:
+# Ensemble 3:
 ensemble_predict3<-apply(cbind( rf_predict, gbm_predict, dl_predict),1,mean)
 MSE(test_y, ensemble_predict3)
 
@@ -575,12 +557,12 @@ knitr::kable(results9, "simple")
 
 # The weighted ensemble 3, has the best MSE among the ensemble models of less than 0.019
 
-# Let's create a relative measures of RMSE and MAEE to understand the model's performance:
+# Let's create a relative measures of pre-logarithmic RMSE and MAE to understand the model's performance:
 
 sqrt(MSEE(test_y,ensemble_predict3))
 MAEE(test_y,ensemble_predict3)
 
-# Now, let's evaluate if this model will passes the assessment industry standards.
+# Now, let's evaluate if this model passes the assessment industry standards.
 # First, we will apply exponential transformation to the predicted and actual results and apply .85 legal requirement to the assessment before calculating the hypothetical Sales Ratio:
 pred<-cbind(Assessed=exp(ensemble_predict3)*.85,Sales_Price=exp(test_y))%>%data.frame()%>%mutate(SR_pred=Assessed/Sales_Price)
 head(pred)
@@ -592,7 +574,7 @@ pred%>%ggplot()+geom_histogram(aes(Assessed), fill="green")+geom_histogram(aes(S
 # Let's calculate the required stats:
 stat<-pred%>%summarise(MEAN=mean(SR_pred), MEDIAN=median(SR_pred))
 stat
-# 95% confidence interval for mean
+# 95% confidence interval for the mean
 sd<-sqrt(sum((pred$SR_pred-stat$MEAN)^2)/(length(pred$SR_pred)-1))
 ci<-(mean(pred$SR_pred)+c(-qnorm(0.975),qnorm(0.975))*sd)*100
 ci
@@ -611,7 +593,7 @@ final
 
 original
 
-# All Ratios either improved or within acceptable limits. Further feature engineering and tuning of the ensemble model will improve the parameters.
+# All Ratios either improved or within acceptable limits. Further feature engineering, tuning and improving structure of the models will improve the parameters.
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++ THE END +++++++++++++++++++++++++++++++++++++++++++++++++++#
 
