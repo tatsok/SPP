@@ -512,21 +512,26 @@ ggplot(average_mse_history, aes(x=epoch, y=validation_mse))+geom_line()+geom_smo
 
 #################################################################################################
 # Optimized Model: Now lets train the final production model with the best parameters (in this case, number of epochs is 75) - (it takes less then 2 minutes)
-# Please note that when test-trained on GPU, the model yields a better result.The result discussed below was produced on CPU.
+# Please note that when test-trained on GPU, the model yields a better result.
 
-model<-build_model()
-model%>%fit(train_x,train_y,epochs=70, batch_size=20, verbose=0)
-
+# Set seed:
 seed = 42
 reticulate::py_set_seed(seed)
 set.seed(seed)
 tensorflow::tf$random$set_seed(42)
 
+# Fit a model
+model<-build_model()
+model%>%fit(train_x,train_y,epochs=70, batch_size=20, verbose=0)
+
+
+# To evaluate your own model use the code below or skip to the next step to load a pre-constructed model:
 model%>%evaluate(test_x, test_y)
 
 # Obtaining reproducible model is difficult with Keras. In order to maintain the consistent result, I saved the model produced here and it will be available to download via GitHub: 
 #save_model_hdf5(model, 'my_dl_model')
 model <- load_model_hdf5('my_dl_model') #from the repository files
+model%>%evaluate(test_x, test_y)
 
 dl_predict<-model%>%predict(test_x)
 
@@ -565,7 +570,7 @@ sqrt(MSEE(test_y,ensemble_predict3))
 MAEE(test_y,ensemble_predict3)
 
 # Now, let's evaluate if this model passes the assessment industry standards.
-# First, we will apply exponential transformation to the predicted and actual results and apply .85 legal requirement to the assessment before calculating the hypothetical Sales Ratio:
+# First, we will apply exponential transformation to the predicted and actual results and apply 85% legal requirement to the assessment before calculating the hypothetical Sales Ratio:
 pred<-cbind(Assessed=exp(ensemble_predict3)*.85,Sales_Price=exp(test_y))%>%data.frame()%>%mutate(SR_pred=Assessed/Sales_Price)
 head(pred)
 

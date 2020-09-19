@@ -15,7 +15,7 @@ knitr::opts_chunk$set(ig.width=20, fig.height=6, fig.path='Figs/',
 
 This research focuses on analyzing a data set from the Property Appraiser's office in Orange County, Florida. The Property Appraiser (Assessor) office in Florida is a local government agency that determines the values of properties within a certain geographic area for taxation purposes. The goal of the office is to fairly and equitably determine the value of properties based on various characteristics and market conditions. The office uses mass appraisal techniques in determining property values. With the support of the computer-assisted mass appraisal system (CAMA), which allows to model and mass update data, the analysts at the property appraiser's office evaluate each property strata to ensure the assessments are within the acceptable standards defined by the Florida Department of Revenue (DOR) and the appraisal community.
 
-The data set used in this work lists qualified single-family residential properties sold in 2019. To be qualified, the sale of a property had to meet certain pre-defined criteria that allow for its Sales Price to be an indication of the property's market value. Each property is identified by a unique parcel ID, situs address, various location characteristics, and property features. The goal of this project is to build an ensemble model that predicts the values of the properties using these characteristics and features. The performance of the model is measured by the value of the mean square error (MSE), the square of the difference between the predictions and the targets. This is a widely used loss function for regression problems such as predicting property values. The key steps involved in the analysis are wrangling and exploring the data, feature engineering and preprocessing of the data, tunning model's parameters, fitting various models (including a deep learning model), and building the final ensemble model that yields the lowest MSE. Given that this model needs to meet the requirements defined by the DOR, we will also test it against the acceptable ratio standards.
+The data set used in this work lists qualified single-family residential properties sold in 2019. To be qualified, the sale of a property had to meet certain pre-defined criteria for its Sales Price to be an indication of the property's market value. Each property is identified by a unique parcel ID, situs address, various location characteristics, and property features. The goal of this project is to build an ensemble model that predicts the values of the properties using these characteristics and features. The performance of the model is measured by the value of the mean squared error (MSE), the square of the difference between the predictions and the targets. This is a widely used loss function for regression problems such as predicting property values. The key steps involved in the analysis are wrangling and exploring the data, feature engineering and preprocessing of the data, tunning model's parameters, fitting various models (including a deep learning model), and building the final ensemble model that yields the lowest MSE. Given that this model needs to meet the requirements defined by the DOR, we will also test it against the acceptable ratio standards.
 
 We start by loading the necessary packages and libraries.  
 
@@ -171,11 +171,6 @@ county <-subset(raster::getData("GADM", country="usa", level=2),
 mybins<-c(0,100000,200000,300000,400000,500000,600000,700000,800000,900000,1000000,Inf)
 pal<-colorBin(palette="Spectral",domain=sqtest$Sales_Price, bins=mybins,reverse=T)
 
-# labels <- sprintf("Date of Sale:<strong> %s</strong><br/>Sale Price: $%g<br/>
-                  #Heated Area: %g<br>Beds: %g <br>Baths: %g", sqtest$Sale_Date, 
-                  #sqtest$Sales_Price, sqtest$HEATED_AREA, sqtest$BEDS, 
-                  #sqtest$BATHS) %>% lapply(htmltools::HTML)
-
 map<-sqtest%>%leaflet()%>%addProviderTiles(providers$Esri.WorldGrayCanvas)%>%
   addCircles(radius=50, color=pal(sqtest$Sales_Price), weight = 3, stroke = FALSE, 
              fillOpacity = 0.8)%>%addCircleMarkers(color=pal(sqtest$Sales_Price),
@@ -216,7 +211,7 @@ Let's calculate the Mean and the Median Sales Price in 2019 for single-family ho
 sqtest%>%summarize(MEAN=mean(Sales_Price), MEDIAN=median(Sales_Price))%>%data.frame()
 ```
 
-Let's review the boxplot and histograms of sales data. Since data is right-skewed, we test the effect of a logarithmic transformation on the *Sales Price*.
+The Mean is \$355,988, when the Median is $280,000. That signals that the data is skewed. Let's review the boxplot and histograms of sales data. Since data is right-skewed, we test the effect of a logarithmic transformation on the *Sales Price*.
 
 ```{r box-orig}
 a<-ggplot(sqtest)+geom_boxplot(aes(Sales_Price), fill="red")
@@ -332,8 +327,10 @@ As a result, we do the transformations after removing zeros and NAs:
 
 ```{r log-tran}
 sqtest<-sqtest%>%mutate(AREA=ifelse(AREA==0, 1, AREA))%>%
-  mutate(STORIES=ifelse(is.na(STORIES),1,STORIES), BEDS=ifelse(is.na(BEDS),1,BEDS), BATHS=ifelse(is.na(BATHS),1,BATHS))%>%mutate(Sales_Price=log(Sales_Price),
-                                                                                                                                 AREA=log(AREA), HEATED_AREA=log(HEATED_AREA), Land_Sq=log(Land_Sq))
+  mutate(STORIES=ifelse(is.na(STORIES),1,STORIES), 
+         BEDS=ifelse(is.na(BEDS),1,BEDS), BATHS=ifelse(is.na(BATHS),1,BATHS))%>%
+  mutate(Sales_Price=log(Sales_Price), AREA=log(AREA), 
+         HEATED_AREA=log(HEATED_AREA), Land_Sq=log(Land_Sq))
 ```
 
 There are several other features listed in the columns 27 through 68. Having too many features increases the computation time of a model often without adding much impact on the outcome. Let's review the correlation to Sales Price and variability of these features. We will remove those with little or no correlation (less than |x|<0.25) and near-zero variability.
@@ -431,9 +428,9 @@ MAEE<-function(true_price, predicted_price){
 
 Now, we are going to fit several different ML models:
 
-# Model 1: GLM - generalized linear model
+# Model 1: GLM 
 
-Generalized Linear Model (GLM), perhabs most commonly used model, represents our outcome variable as a linear function of input features. To improve model's performance, we will define trControl function that controls the resampling scheme to 10-fold cross-validation:
+Generalized Linear Model (GLM), perhaps most commonly used model in data analysis, represents our outcome variable as a linear function of input features. To improve model's performance, we will define trControl function that controls the resampling scheme to 10-fold cross-validation:
 
 ```{r glm, include=TRUE, message=TRUE, warning=FALSE}
 Control<-trainControl(method="cv", number=10)
@@ -449,7 +446,7 @@ knitr::kable(results1, "simple")
 
 # Model 2: LOESS  
 
-Loess model is a local polynomial regression that uses local weighted regression to fit a smooth curve through data points. We use 5-fold cross-validation for this model. In Loess, we can tune the parameters, namely span, using tuneGrid function. Tuning is omitted from this work to improve the computational time.
+Loess model is a local polynomial regression that uses local weighted regression to fit a smooth curve through data points. We use 5-fold cross-validation for this model. In Loess, we can tune the parameters, namely span, using tuneGrid function. *Note: Tuning is omitted in the code below to improve the computational time.*
 
 ```{r loess, include=TRUE, message=TRUE, warning=FALSE}
 Control<-trainControl(method="cv", number=5)
@@ -464,7 +461,7 @@ knitr::kable(results2, "simple")
 ```
 
 
-Yet, the MSE results have improved from 0.0495869 to 0.0347857. 
+The MSE results have improved from 0.0495869 to 0.0347857. 
 
 # Model 3: svmLinear
 
@@ -516,7 +513,7 @@ plot(train_knn)
 train_knn$bestTune
 ```
 
-Similarly to the svmLinear model, *HEATED_AREA* is by far more important than the rest of the variables. By plotting the model, we see that the best number of neighbors parameter is 5.
+Similarly to the svmLinear model, *HEATED_AREA* is the important feature followed by *BATHS*. By plotting the model, we see that the best number of neighbors parameter is 5.
 
 # Model 5: Random Forest with Rborist
 
@@ -535,7 +532,7 @@ ggplot(train_rf)
 train_rf$bestTune
 ```
 
-Since predFixed=10 and  minNode=1 are the best parameters, we apply these using the Rborist model with 500 trees, which a faster implementation of Random Forest:
+Since predFixed=10 and  minNode=1 are the best parameters, we apply 500 trees and the Rborist model, which is a faster implementation of Random Forest:
 
 ```{r rf-Rb, include=TRUE, message=TRUE, warning=FALSE}
 grid<-expand.grid(minNode=1, predFixed=10)
@@ -569,7 +566,7 @@ results6<-bind_rows(results5, data_frame(MODEL="GBM", MSE=MSE(test_y, gbm_predic
 knitr::kable(results6, "simple")
 ```
 
-By plotting the most influential parameters, we see that *HEATED_AREA* appears to have the most relative influence followed by *DOR_CODE* and *AREA*..
+By plotting the most influential parameters, we see that *HEATED_AREA* appears to have the most relative influence followed by *DOR_CODE* and *AREA*. On the contrary, *SPA*. *SHED_N*, *PATIO_NO* are the bottom three that can potentially be removed from the model.
 
 ```{r gbmplot, include=TRUE, message=TRUE, warning=FALSE}
 par(mar = c(5, 8, 1, 1))
@@ -619,7 +616,7 @@ MSE_test[which.min(MSE_test),]
 which.min(MSE_test)
 ```
 
-The best result was achieved with *i* equal to 1. Let's recreate the ensemble 2 model:
+The best result was achieved with *i* equal to 1. Let's update the ensemble 2 model:
 
 ```{r e2wf, include=TRUE, message=TRUE, warning=FALSE}
 ensemble_predict2<-cbind(rf_predict,gbm_predict)%>%data.frame()%>%
@@ -636,7 +633,7 @@ So far, this is the best model that yields MSE of 0.0192049. Let's see if we can
 
 Deep learning in nature is a subset of machine learning that puts an emphasis on models called neural networks, structured in literal layers stacked on top of each other.
 
-Using the powerful *Keras* package, we create a network with five dense layers with the following units: 256, 1024, 512, 256, 1 (output layer). And a dropout rate of 0.1 that helps to reduce overfitting. The network ends with a single unit to predict a single continuous value of Sales Prices.
+Using the powerful *Keras* package, we create a network with five dense layers with the following units: 256, 1024, 512, 256, 1 (output layer) and a dropout rate of 0.1 that helps to mitigate overfitting. The network ends with a single unit to predict a single continuous value of Sales Prices.
 
 ```{r s1, include=FALSE, message=FALSE, warning=FALSE}
 # To ensure this code is reproducible, the following set seed is used:
@@ -701,12 +698,7 @@ ggplot(average_mse_history, aes(x=epoch, y=validation_mse))+geom_line()+geom_smo
 
 According to the plot, MSE stops improving after 70 epochs. Past that, we start overfilling. While not included in this work, the size and number of hidden layers can also be tuned to improve the model's performance.
 
-Now let's train the final deep learning model with the best parameters (in this case, the number of epochs is 70). *Please note that when testing on GPU, the model yields a better result. The result discussed in this study was produced on CPU as proof of concept only. GPU use is highly recommended.* The model fit using Tesla V100 GPU on a ubuntu-18.04-LTS server.
-
-```{r mod, include=TRUE, message=TRUE, warning=FALSE}
-model<-build_model()
-model%>%fit(train_x,train_y,epochs=70, batch_size=20, verbose=0)
-```
+Now let's train the optimized deep learning model with the best parameters (in this case, the number of epochs is 70). Please note that when fitting on GPU, the model yields a better result. The result discussed in this study was produced using Tesla V100 GPU on ubuntu-18.04-LTS server. GPU use is recommended. 
 
 ```{r s2, include=FALSE, message=FALSE, warning=FALSE}
 # To ensure this code is reproducible, the following set seed is used:
@@ -716,12 +708,25 @@ set.seed(seed)
 tensorflow::tf$random$set_seed(42)
 ```
 
-Obtaining a reproducible model that yields the same MSE is challenging with *Keras.* In order to maintain a consistent result, the original model produced ("my_dl_model") is also available in the repository.
+```{r mod, include=TRUE, message=TRUE, warning=FALSE}
+model<-build_model()
+model%>%fit(train_x,train_y,epochs=70, batch_size=20, verbose=0)
+```
+
+Obtaining a consistent and reproducible model that yields the same MSE is challenging with *Keras.* In order to maintain a consistent result, the original model produced ("my_dl_model") is made available in the repository.
+
+```{r dlevo, message=FALSE, warning=FALSE, include=FALSE}
+# To evaluate your own model use this code or skip to the next step to load a pre-constructed model:
+#model%>%evaluate(test_x, test_y)
+#save_model_hdf5(model, 'my_dl_model')
+```
+
+```{r dlevrep, include=FALSE, message=FALSE, warning=FALSE}
+model <- load_model_hdf5('my_dl_model') #from the repository files
+```
 
 ```{r dlev, include=TRUE, message=TRUE, warning=FALSE}
 model%>%evaluate(test_x, test_y)
-model <- load_model_hdf5('my_dl_model') #the original model
-
 dl_predict<-model%>%predict(test_x)
 # MSE is generated by the deep learning model is:
 MSE(test_y,dl_predict)
@@ -733,7 +738,7 @@ Let's compile a third ensemble including the deep learning model.
 
 # Ensemble 3:
 
-First, we assign the same weight for each model.
+First, we assign the same weights for each model.
 
 ```{r es3, include=TRUE, message=TRUE, warning=FALSE}
 ensemble_predict3<-apply(cbind( rf_predict, gbm_predict, dl_predict),1,mean)
@@ -779,7 +784,7 @@ sqrt(MSEE(test_y,ensemble_predict3))
 MAEE(test_y,ensemble_predict3)
 ```
 
-That means that the model's results deviate by 55 thousand dollars from the average and 33 thousand from the mean Sales Price.
+That means that the model's results deviate by \$54,235 on average with \$33,230 being the median deviation. Considering that the Mean Sales Price is \$355,988 and the Median is $280,000, there is still room for improvement.
 
 # INDUSTRY STANDARDS
 
@@ -803,7 +808,7 @@ pred%>%ggplot()+geom_histogram(aes(Assessed), fill="green")+
        subtitle= 'Year: 2019', x = 'Sales Price', y = 'Count')
 ```
 
-We can see from the plot, the distribution is fairly close to the original Sales Prices considering the 15% adjustment.
+We can see from the plot, the distribution is fairly close to the original Sales Prices distribution considering the 15% adjustment of the Predicted (Assessed) values identified in green.
 
 Let's calculate the required statistics:
 
@@ -832,16 +837,16 @@ Let's compare the performance of the final model ratios to the original data rat
 original
 ```
 
-All ratios have either improved or within acceptable limits. The MEDIAN and MEAN of the final model are closer to 85%. The COD and PRD of the data are within acceptable industry ranges. 95% of the observations are within the 61 to 110 range, which is a bit above the original due to sampling. We can conclude that the model passes the industry standards test.
+All ratios have either improved or within acceptable limits. The MEDIAN and MEAN of the final model are closer to 85%. The COD and PRD of the data are within acceptable industry ranges. 95% of the observations are within the 61 to 110 range, which is a bit above the original values due to sampling. We can conclude that the model passes the industry standards test.
 
 \newpage
 ## CONCLUSION AND FUTURE WORK
 
-Application of Machine Learning algorithms for predicting property values is reasonable in a mass appraisal setting. It offers flexibility and scalability necessary when valuing a large number of properties on an annual basis. The limitations in this technique include time spent on feature engineering and tuning of the parameters for each model. Ensemble models offer better performance when compared to most individual models, but could be complex in its application and interpretability. 
+Application of Machine Learning algorithms for predicting property values is reasonable in a mass appraisal setting. It offers flexibility and scalability necessary when valuing a large number of properties on an annual basis. The limitations include initial investment in data pre-processing and feature engineering, and continuous need for tuning of the model. While Ensemble models offer better performance when compared to most individual models, they could be complex in its application and interpretability. 
 
-The best model produced through this work is a weighted ensemble model based on Random Forest, Gradient Boosting, and Deep Learning (DL). This model yields the lowest MSE with results deviating by $55 thousand$ from the average and $33 thousand$ from the mean Sales Price. There is a wide array of opportunities to continue tuning parameters and changing the structure of the Deep Learning model. The biggest limitation of the DL model is its lack of interpretability for assessors working in the highly regulated industry. 
+The best model produced through this work is a weighted ensemble model based on Random Forest, Gradient Boosting, and Deep Learning (DL). This model yields the lowest MSE of 0.0189163 with results deviating by \$54,235 on average and $33,230 using mean. There is a wide array of opportunities to continue tuning parameters and changing the structure of the Deep Learning model. The biggest challenge using the DL model is its lack of interpretability for assessors working in the highly regulated industry. 
 
-The future work includes: (1) Continued feature engineering including wrangling, removing or adding new variables with a focus on reducing correlation between features; (2) Parameter and DL structure tuning in addition the utilization of GPU training clusters; (3) Evaluation of additional models and ensembling options. 
+The future work includes: (1) Continued feature engineering, adding new variables or removing features that don't improve the model; (2) Parameter and DL structure tuning in addition to the utilization of GPU training clusters; (3) Evaluation of additional models and ensembling options. 
 
 
 
