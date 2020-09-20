@@ -114,7 +114,7 @@ c<-ggplot(sqtest)+geom_histogram(aes(Sales_Price), fill="red")
 d<-ggplot(sqtest)+geom_histogram(aes(log(Sales_Price)), fill="blue")
 ggpubr::ggarrange(a,b,c,d,ncol = 2, nrow = 2)
 
-# The sales price data is right skewed. The logarithmic transformation will be warranted as it makes distribution to resemble a normal curve and it tends to show less severe increases or decreases than linear scales.
+# The sales price data is right-skewed. The logarithmic transformation will be warranted as it makes distribution to resemble a normal curve and it tends to show less severe increases or decreases than linear scales.
 
 # Let's now review SR feature in the data set that stands for sales ratio. This ratio is calculated for each observation by dividing the appraised (or assessed) value by the sale price.
 # It measures the quality of the assessments and can be used to measure the annual performance of the assessment roll produced by the assessors' offices.
@@ -135,7 +135,7 @@ ggpubr::ggarrange(e,f,ncol = 1, nrow = 2)
 
 
 
-# For single-family residential (no condos) the acceptable Sales Ratio should be close to 0.85 due to a legal requirement to adjust Assessed value by 15%. 
+# For single-family residential (no condos) the acceptable Sales Ratio should be close to 85% due to a legal requirement to adjust Assessed value by 15%. 
 # Additionally, assessment jurisdictions do an annual ratio study to determine the uniformity, variability, and equality of the assessment roll.
 # The most generally useful measure of variability or uniformity is the COD. 
 # It relates to “horizontal,” or random, dispersion among the ratios in a stratum, regardless of the value of individual parcels. 
@@ -300,7 +300,7 @@ glm_predict<-predict(train_glm, test_x)
 results1<-data_frame(MODEL="GLM", MSE=MSE(test_y, glm_predict))
 knitr::kable(results1, "simple")
 
-# Model 2: LOESS - (takes under 2 minutes) 
+# Model 2: LOESS - (takes under 2 minutes on CPU) 
 # In Loess model, we can tune the paarmeters using tuneGrid function. After further testing, tuning was omitted to decrease time of training.
 #tuneGrid = expand.grid(span = seq(0.20, 0.50, len = 10), degree=2) 
 
@@ -314,7 +314,7 @@ knitr::kable(results2, "simple")
 
 # MSE results have improved from 0.0495869 to 0.0347857
 
-# Model 3: svmLinear - (takes under 2 minutes)
+# Model 3: svmLinear - (takes under 2 minutes on CPU)
 
 # An SVM classifies data by determining the optimal hyperplane that separates observations according to their class labels. 
 # While commonly used for classification problems, it can also be applied to regression tasks. We will try it here.
@@ -334,7 +334,7 @@ knitr::kable(results3, "simple")
 
 # The SVM model did not do as great, lets try K Nearest Neighbors (KNN) model.
 
-# Model 4: KNN - (takes under 1 minute)
+# Model 4: KNN - (takes under 1 minute on CPU)
 
 tuningknn<-data.frame(k=seq(3,13,2))
 Control<-trainControl(method="cv", number=5)
@@ -354,7 +354,7 @@ train_knn$bestTune
 results4<-bind_rows(results3, data_frame(MODEL="KNN", MSE=MSE(test_y, knn_predict)) )
 knitr::kable(results4, "simple")
 
-# Model 5: Random Forest with Rborist - (less then 2 minutes)
+# Model 5: Random Forest with Rborist - (less then 2 minutes on CPU)
 
 # Let's first run a model on 50 trees to define the best tunning parameters (you can skip this code and go to the model with the best parameters a few lines below):
 control<-trainControl(method="cv", number = 5, p=0.8)
@@ -371,7 +371,7 @@ train_rf$bestTune
 # Now let's train with the best parameters
 grid<-expand.grid(minNode=1, predFixed=10)
 set.seed(1)
-train_rf<-Rborist(train_x, train_y, nTree=500, tuneGrid=grid) #- (less then 1 min)
+train_rf<-Rborist(train_x, train_y, nTree=500, tuneGrid=grid) #- (less then 1 min on CPU)
 
 rf_predict<-predict(train_rf, test_x)%>%.$yPred
 
@@ -380,7 +380,7 @@ knitr::kable(results5, "simple")
 
 # The Random Forrest model yields the lowest MSE so far. 
 
-# Model 6: GBM - gradient boosting - (it takes under 5 minutes) 
+# Model 6: GBM - gradient boosting - (it takes under 5 minutes on CPU) 
 
 # Gradient boosting is considered a gradient descent algorithm.
 # Whereas random forests build an ensemble of deep independent trees, GBMs build an ensemble of shallow and weak successive trees with each tree learning and improving on the previous. 
@@ -430,7 +430,7 @@ MSE(test_y,ensemble_predict2)
 
 # The MSE has improved.
 
-# Let's see if changing weights can improve model performance even further:
+# Let's see if changing weights can improve the model's performance even further:
 MSE_test<-NULL
 for (i in 1:9){
   ensemble_predict2<-cbind(rf_predict,gbm_predict)%>%data.frame()%>%mutate(weighted=rf_predict*i/10+gbm_predict*(1-i/10))%>%.$weighted
@@ -450,7 +450,7 @@ knitr::kable(results8, "simple")
 # So far, this is the best model. Let's see if we can take it a step further and improve the MSE parameter by adding another model:
 
 # Model: Deep-learning 
-# Because the data set is not large, I will use a network with five dense layers with the following units: 256, 1024, 512, 256, 1 (output layer). 
+# Using Keras package, I will create a network with five dense layers with the following units: 256, 1024, 512, 256, 1 (output layer). 
 # And a dropout rate of 0.1 that helps to reduce overfitting.
 # The network will end with a single unit to predict a single continuous value.
 
@@ -477,7 +477,7 @@ build_model<-function(){
 k_clear_session()
 #######################################################################################
 # To evaluate our network and adjust the parameters, we will use k-fold validation which consists of splitting the available data into 4 partitions and training on each partition split while evaluating on the remaining partitions.
-# Please note, it takes about 20 minutes to complete this step. You can skip to the optimized model below:
+# Please note, it takes about 20 minutes on CPU to complete this step. You can skip to the optimized model below:
 
 k<-4
 indices<-sample(1:nrow(train_x))
@@ -511,7 +511,7 @@ ggplot(average_mse_history, aes(x=epoch, y=validation_mse))+geom_line()+geom_smo
 # We can also tune other parameters, such as size of the hidden layers. 
 
 #################################################################################################
-# Optimized Model: Now lets train the final production model with the best parameters (in this case, number of epochs is 75) - (it takes less then 2 minutes)
+# Optimized Model: Now lets train the final production model with the best parameters (in this case, number of epochs is 70) 
 # Please note that when test-trained on GPU, the model yields a better result.
 
 # Set seed:
@@ -538,7 +538,7 @@ dl_predict<-model%>%predict(test_x)
 # Let's see what MSE is generated by the deep learning model
 MSE(test_y,dl_predict)
 
-# This result is relatively good, but it's not ranked first. 
+# This result is relatively good (0.02793818 - using "my_dl_model"), but it's not ranked first. 
 
 # Let's compile a 3rd ensemble with the deep learning model giving the same weight to each model:
 # Ensemble 3:
@@ -600,8 +600,8 @@ final
 
 original
 
-# All Ratios either improved or within acceptable limits. Further feature engineering, tuning and improving structure of the models will improve the parameters.
+# All Ratios either improved or within acceptable limits. Further feature engineering, tuning and configuring will improve the model's performance.
 
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++ THE END +++++++++++++++++++++++++++++++++++++++++++++++++++#
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++ THE END - THANK YOU! +++++++++++++++++++++++++++++++++++++++++++++++++++#
 
    

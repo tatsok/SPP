@@ -11,9 +11,9 @@ knitr::opts_chunk$set(ig.width=20, fig.height=6, fig.path='Figs/',
                       echo=TRUE, warning=FALSE, message=FALSE)
 ```
 
-## INTRODUCTION ##
+# INTRODUCTION 
 
-This research focuses on analyzing a data set from the Property Appraiser's office in Orange County, Florida. The Property Appraiser (Assessor) office in Florida is a local government agency that determines the values of properties within a certain geographic area for taxation purposes. The goal of the office is to fairly and equitably determine the value of properties based on various characteristics and market conditions. The office uses mass appraisal techniques in determining property values. With the support of the computer-assisted mass appraisal system (CAMA), which allows to model and mass update data, the analysts at the property appraiser's office evaluate each property strata to ensure the assessments are within the acceptable standards defined by the Florida Department of Revenue (DOR) and the appraisal community.
+This research focuses on analyzing a data set from the Property Appraiser's office in Orange County, Florida. The Property Appraiser (Assessor) office in Florida is a local government agency that determines the values of properties within a certain geographic area for taxation purposes. The goal of the office is to fairly and equitably determine the value of properties based on various characteristics and market conditions. The office uses mass appraisal techniques in determining property values. With the support of the computer-assisted mass appraisal system (CAMA), which allows to model and mass update data, the analysts at the property appraiser's office evaluate each property strata to ensure the assessments are within the acceptable standards defined by the Florida Department of Revenue (DOR) and the appraisal industry.
 
 The data set used in this work lists qualified single-family residential properties sold in 2019. To be qualified, the sale of a property had to meet certain pre-defined criteria for its Sales Price to be an indication of the property's market value. Each property is identified by a unique parcel ID, situs address, various location characteristics, and property features. The goal of this project is to build an ensemble model that predicts the values of the properties using these characteristics and features. The performance of the model is measured by the value of the mean squared error (MSE), the square of the difference between the predictions and the targets. This is a widely used loss function for regression problems such as predicting property values. The key steps involved in the analysis are wrangling and exploring the data, feature engineering and preprocessing of the data, tunning model's parameters, fitting various models (including a deep learning model), and building the final ensemble model that yields the lowest MSE. Given that this model needs to meet the requirements defined by the DOR, we will also test it against the acceptable ratio standards.
 
@@ -102,7 +102,7 @@ head(sqtest, n=20)
 The data is displayed in the long format and is not tidy. We note that some parcels are repeated and represented by various combinations of *Exterior Wall* and *XFOB Desc* observations. These stand for the quality of construction *(Exterior Wall)* and various extra features *(XFOB Desc)* such as pool, screen, patio, etc. 
 
 \newpage
-## DATA WRANGLING
+# DATA WRANGLING
 
 To make the data tidy, we will apply several data wrangling techniques to rename variables, convert variable types, remove repeated observations, and spread extra features (XFOB Desc) into a wide format.
 
@@ -161,9 +161,9 @@ str(sqtest, vec.len=2, list.len=50)
 
 
 \newpage
-## VISUALIZATION AND RATIO STANDARDS
+# VISUALIZATION AND RATIO STANDARDS
 
-Let's visualize our tidy data set on Orange County, Florida map using *Leaflet* package.
+Let's visualize our tidy data set on the Orange County, Florida map using *Leaflet* package.
 
 ```{r map}
 county <-subset(raster::getData("GADM", country="usa", level=2), 
@@ -211,7 +211,7 @@ Let's calculate the Mean and the Median Sales Price in 2019 for single-family ho
 sqtest%>%summarize(MEAN=mean(Sales_Price), MEDIAN=median(Sales_Price))%>%data.frame()
 ```
 
-The Mean is \$355,988, when the Median is $280,000. That signals that the data is skewed. Let's review the boxplot and histograms of sales data. Since data is right-skewed, we test the effect of a logarithmic transformation on the *Sales Price*.
+The Mean is \$355,988, when the Median is $280,000. That signals that the data is skewed. Let's review the boxplot and histograms of the sales data. Since the data is right-skewed, we test the effect of a logarithmic transformation on the *Sales Price*.
 
 ```{r box-orig}
 a<-ggplot(sqtest)+geom_boxplot(aes(Sales_Price), fill="red")
@@ -280,7 +280,7 @@ original
 ```
 
 \newpage
-## FEATURE ENGINEERING
+# FEATURE ENGINEERING
 
 Features such as *EYB* and *AYB* stand for effective and actual year build. If a property had no renovations throughout its lifetime, these parameters will be the same. If a property had a significant renovation, the difference in *EYB* will be 10 years or more. Therefore, we will calculate the age of property by substructing it from a sales date.
 
@@ -377,7 +377,7 @@ sqtest<-sqtest[,c(7:13,15,16,20:25, 27:ncol(sqtest))]
 Therefore, our set is reduced to 26 variables and we are ready to begin constructing the ML algorithms.
 
 \newpage
-## ML ALGORITHMS
+# ML ALGORITHMS
 
 First, let's separate our outcome data into a vector *y* of Sales Prices and create a matrix *x* containing the features:
 
@@ -406,7 +406,7 @@ train_x<-scale(train_x, center=mean,scale=std)
 test_x<-scale(test_x, center=mean, scale=std)
 ```
 
-There are a variety of loss functions available to measure the performance of ML algorithms. We will use MSE (mean square error) as our loss function through this work. For results interpretation, we will also define a function for MAE (mean absolute error) as a relative metric of loss. One important distinction between MAE & MSE is that minimizing the squared error over a set of numbers results in finding its mean and minimizing the absolute error results in finding its median. This is the reason why MAE is robust to outliers whereas MSE is not. We will also define its reverse functions considering the original logarithmic transformations to evaluate end results:
+There are a variety of loss functions available to measure the performance of ML algorithms. We will use MSE (mean squared error) as our loss function through this work. For results interpretation, we will also define a function for MAE (mean absolute error) as a relative metric of loss. One important distinction between MAE & MSE is that minimizing the squared error over a set of numbers results in finding its mean and minimizing the absolute error results in finding its median. This is the reason why MAE is robust to outliers whereas MSE is not. We will also define its reverse functions considering the original logarithmic transformations to evaluate end results:
 
 ```{r losses, include=TRUE, message=FALSE, warning=FALSE}
 MSE <- function(true_price, predicted_price){ 
@@ -465,7 +465,7 @@ The MSE results have improved from 0.0495869 to 0.0347857.
 
 # Model 3: svmLinear
 
-A support-vector machine (SVM) model classifies data by determining the optimal hyperplane that separates observations according to their class labels. While commonly used for classification problems, it can also be applied to regression tasks. Let's see how well it will perform on our data. We use 5-fold cross validation without additional grid tuning, which substantially increases the model's training time.
+A support-vector machine (SVM) model classifies data by determining the optimal hyperplane that separates observations according to their class labels. While commonly used for classification problems, it can also be applied to regression tasks. Let's see how well it will perform on our data. We use 5-fold cross-validation without additional grid tuning, which substantially increases the model's training time.
 
 ```{r svm, include=TRUE, message=TRUE, warning=FALSE}
 Control<-trainControl(method="cv", number=5)
@@ -480,7 +480,7 @@ results3<-bind_rows(results2, data_frame(MODEL="SVM", MSE=MSE(test_y, svm_predic
 knitr::kable(results3, "simple")
 ```
 
-The SVM model showed an increase in MSE when compared to GLM or Loess. The varImp function showed that *HEATED_AREA*, *BATHS*, *POOL* are among the top three variables, while *SHED*, *DOR_CODE*, and *SHED_N* is the least important.
+The SVM model showed an increase in MSE when compared to GLM or Loess. The varImp function showed that *HEATED_AREA*, *BATHS*, *POOL* are among the top three variables, while *SHED*, *DOR_CODE*, and *SHED_N* being the least important.
 
 ```{r varsvm}
 # Variables importance:
@@ -491,7 +491,7 @@ Let's fit K Nearest Neighbors (KNN) model next.
 
 # Model 4: KNN
 
-K nearest neighbors (KNN) is an algorithm that classifies new cases based on a similarity (distance). It can be used to solve both classification and regression problems. We use 5-fold cross validation and tune with a sequence of k parameters.
+K nearest neighbors (KNN) is an algorithm that classifies new cases based on a similarity (distance). It can be used to solve both classification and regression problems. We use 5-fold cross-validation and tune with a sequence of k parameters.
 
 ```{r knn, include=TRUE, message=TRUE, warning=FALSE}
 tuningknn<-data.frame(k=seq(3,13,2))
@@ -517,7 +517,7 @@ Similarly to the svmLinear model, *HEATED_AREA* is the important feature followe
 
 # Model 5: Random Forest with Rborist
 
-Random Forest (RF) operates by constructing a multitude of decision trees and outputting mean prediction of the trees. We use 5-fold cross validation for the model. Let's first run a model on 50 trees to define the best tuning parameters for the model:
+Random Forest (RF) operates by constructing a multitude of decision trees and outputting mean prediction of the trees. We use 5-fold cross-validation for the model. Let's first run a model on 50 trees to define the best tuning parameters for the model:
 
 ```{r rf, include=TRUE, message=TRUE, warning=FALSE}
 control<-trainControl(method="cv", number = 5, p=0.8)
@@ -547,9 +547,9 @@ knitr::kable(results5, "simple")
 
 The Random Forrest model yields the lowest MSE of 0.252417.
 
-# Model 6: GBM - gradient boosting
+# Model 6: GBM 
 
-Gradient boosting is considered a gradient descent algorithm. Whereas random forests build an ensemble of deep independent trees, GBMs build an ensemble of shallow and weak successive trees with each tree learning and improving on the previous. We use 1000 trees to fit the model. GBMs often require many trees; however, unlike random forests, GBMs can overfit so the goal is to find the optimal number of trees that minimizes the loss function of interest with cross validation.
+Gradient Boosting Model (GBM) is considered a gradient descent algorithm. Whereas random forests build an ensemble of deep independent trees, GBMs build an ensemble of shallow and weak successive trees with each tree learning and improving on the previous. We use 1000 trees to fit the model. GBMs often require many trees; however, unlike random forests, GBMs can overfit so the goal is to find the optimal number of trees that minimizes the loss function of interest with cross-validation.
 
 Please note the parameters below were tuned using (1) shrinkage = c(.01, .1, .3) - learning rate that controls how quickly the algorithm proceeds down the gradient descent; (2) interaction.depth = c(1, 3, 5) - the number of splits in each tree, which controls the complexity of the boosted ensemble; (3) n.minobsinnode = c(5, 10, 15) - the minimum number of observations allowed in the trees terminal nodes. The best tuning parameters are picked in the code below.
 
@@ -566,7 +566,7 @@ results6<-bind_rows(results5, data_frame(MODEL="GBM", MSE=MSE(test_y, gbm_predic
 knitr::kable(results6, "simple")
 ```
 
-By plotting the most influential parameters, we see that *HEATED_AREA* appears to have the most relative influence followed by *DOR_CODE* and *AREA*. On the contrary, *SPA*. *SHED_N*, *PATIO_NO* are the bottom three that can potentially be removed from the model.
+By plotting the most influential parameters, we see that *HEATED_AREA* appears to have the most relative influence followed by *DOR_CODE* and *AREA*. On the contrary, *SPA*, *SHED_N*, *PATIO_NO* are the bottom three that can potentially be removed from the model.
 
 ```{r gbmplot, include=TRUE, message=TRUE, warning=FALSE}
 par(mar = c(5, 8, 1, 1))
@@ -696,7 +696,7 @@ average_mse_history<-data.frame(epoch=seq(1:ncol(all_scores)),
 ggplot(average_mse_history, aes(x=epoch, y=validation_mse))+geom_line()+geom_smooth()
 ```
 
-According to the plot, MSE stops improving after 70 epochs. Past that, we start overfilling. While not included in this work, the size and number of hidden layers can also be tuned to improve the model's performance.
+According to the plot, MSE stops improving after about 70 epochs. Past that, we start overfilling. While not included in this work, the size and number of hidden layers can also be tuned to improve the model's performance.
 
 Now let's train the optimized deep learning model with the best parameters (in this case, the number of epochs is 70). Please note that when fitting on GPU, the model yields a better result. The result discussed in this study was produced using Tesla V100 GPU on ubuntu-18.04-LTS server. GPU use is recommended. 
 
@@ -788,7 +788,7 @@ That means that the model's results deviate by \$54,235 on average with \$33,230
 
 # INDUSTRY STANDARDS
 
-Now, let's evaluate if this model passes the assessment industry standards. First, we will apply exponential transformation to the predicted and actual results; then, apply 85% legal requirement to the Predicted (Assessment) values before calculating the hypothetical Sales Ratio:
+Now, let's evaluate if this model passes the assessment industry ratio standards. First, we will apply exponential transformation to the predicted and actual results; then, apply 85% state requirement to the Predicted (Assessment) values before calculating the hypothetical Sales Ratio:
 
 ```{r pred, include=TRUE, message=TRUE, warning=FALSE}
 pred<-cbind(Assessed=exp(ensemble_predict3)*.85,Sales_Price=exp(test_y))%>%data.frame()%>%
@@ -831,22 +831,26 @@ final<-knitr::kable(cbind(MEDIAN=stat$MEDIAN*100, MEAN=stat$MEAN*100,
 final
 ```
 
-Let's compare the performance of the final model ratios to the original data ratios. 
+Now, we compare the performance of the final model ratios to the original data ratios. 
 
 ```{r ofstat, include=TRUE, message=TRUE, warning=FALSE}
 original
 ```
 
-All ratios have either improved or within acceptable limits. The MEDIAN and MEAN of the final model are closer to 85%. The COD and PRD of the data are within acceptable industry ranges. 95% of the observations are within the 61 to 110 range, which is a bit above the original values due to sampling. We can conclude that the model passes the industry standards test.
+Notably, all ratios have either improved or within acceptable limits. The MEDIAN and MEAN of the final model are closer to 85%. The COD and PRD of the data are within acceptable industry ranges. 95% of the observations are within the 61 to 110 range, which is a bit above the original values due to sampling. We can conclude that the model passes the industry ratio standards test.
 
 \newpage
-## CONCLUSION AND FUTURE WORK
+# CONCLUSION AND FUTURE WORK
 
-Application of Machine Learning algorithms for predicting property values is reasonable in a mass appraisal setting. It offers flexibility and scalability necessary when valuing a large number of properties on an annual basis. The limitations include initial investment in data pre-processing and feature engineering, and continuous need for tuning of the model. While Ensemble models offer better performance when compared to most individual models, they could be complex in its application and interpretability. 
+The application of Machine Learning algorithms for predicting property values is reasonable in a mass appraisal setting. It offers flexibility and scalability necessary when valuing a large number of properties on an annual basis. The limitations of this methodology in determining property values include its complexity in application considering required data pre-processing and feature engineering, model tuning and configuring. While Ensemble models offer better performance when compared to stand-alone ML models, they could be difficult to explain. 
 
-The best model produced through this work is a weighted ensemble model based on Random Forest, Gradient Boosting, and Deep Learning (DL). This model yields the lowest MSE of 0.0189163 with results deviating by \$54,235 on average and $33,230 using mean. There is a wide array of opportunities to continue tuning parameters and changing the structure of the Deep Learning model. The biggest challenge using the DL model is its lack of interpretability for assessors working in the highly regulated industry. 
+The best model produced through this work is a weighted ensemble model based on Random Forest, Gradient Boosting, and Deep Learning (DL). This model yields the lowest MSE of 0.0189163 with results deviating by \$54,235 on average and $33,230 using mean. There is a wide array of opportunities to continue tuning parameters and changing the structure of the Deep Learning model to improve the ensemble performance. The biggest challenge using the DL model is its lack of interpretability for assessors working in the highly regulated industry. 
 
-The future work includes: (1) Continued feature engineering, adding new variables or removing features that don't improve the model; (2) Parameter and DL structure tuning in addition to the utilization of GPU training clusters; (3) Evaluation of additional models and ensembling options. 
+The future work includes feature engineering - the process of evaluating and adjusting variables inputted into a model. This may include adding new features that can explain the variability of an outcome and removing those that add noise to the model. For example, adding features like area school grades and average household characteristics can positively impact the model's performance. Also, using a prior year assessment data of properties will help to better explain the outcome, especially if used on a large data set to predict the values of properties that do not have any recent sales. Further filtering and transforming the data, removing the outliers may have a positive effect on the MSE. Another area of future work is parameter tuning of the ML models including configuring the number of nodes and layers in the Deep Learning model. Furthermore, to accommodate the scaling of the Deep Learning model and adding more data to process, such as aerial imagery of properties, warrants investment in computational resources such as GPU clusters. Finally out of a library of hundreds of available ML models, we fitted 6 stand-alone and created 3 ensemble models. It is prudent to further explore fitting additional models or creating different ensembles to yield the best model's performance.
+
+
+
+
 
 
 
